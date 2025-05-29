@@ -18,6 +18,7 @@ from app.database import SessionLocal
 from app.core.security import AdminUser, pwd_context
 from app.api.endpoints.auth import get_current_user
 from app.utils.fb_data import save_fb_data
+from app.utils.fb_data import load_fb_data
 
 
 SETTINGS_DIR = "app/static"
@@ -163,3 +164,29 @@ def connect_facebook_page(
 
     except requests.exceptions.RequestException as e:
         raise HTTPException(status_code=400, detail=f"Facebook API error: {str(e)}")
+    
+@router.get("/facebook-page-url")
+def get_facebook_page_url():
+    """
+    Returns the Facebook page URL that can be opened in a browser
+    """
+    try:
+        fb_data = load_fb_data()
+        page_id = fb_data.get("page_id")
+        
+        if not page_id:
+            raise HTTPException(status_code=404, detail="Facebook page not connected")
+        
+        # Construct the Facebook page URL
+        page_url = f"https://www.facebook.com/{page_id}"
+        
+        return {
+            "page_url": page_url,
+            "page_id": page_id,
+            "message": "Facebook page URL retrieved successfully"
+        }
+        
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Facebook configuration not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving Facebook page URL: {str(e)}")
