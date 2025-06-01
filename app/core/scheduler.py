@@ -51,5 +51,6 @@ def process_queue():
 def start_scheduler():
     settings = load_settings()
     interval_minutes = settings.get("post_interval_minutes", 3)
+    print("time to post: ", interval_minutes)
     scheduler.add_job(process_queue, "interval", minutes=interval_minutes)
     scheduler.start()

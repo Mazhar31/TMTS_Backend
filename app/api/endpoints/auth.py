@@ -30,15 +30,32 @@ def create_access_token(data: dict, expires_delta: timedelta):
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-# Login route
+# Login route (Updated with approval and active status checks)
 @router.post("/login")
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(AdminUser).filter(AdminUser.email == form_data.username).first()
 
+    # Check if user exists and password is correct
     if not user or not pwd_context.verify(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Check if user is approved (new check)
+    if not user.is_approved:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account pending approval. Please contact administrator.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Check if user is active (new check)
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account has been deactivated. Please contact administrator.",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -49,13 +66,25 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
     return {"access_token": access_token, "token_type": "bearer"}
 
-# Auth guard for protected routes
-def get_current_user(token: str = Depends(oauth2_scheme)):
+# Auth guard for protected routes (Updated with additional checks)
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username = payload.get("sub")
         if not username:
             raise HTTPException(status_code=401, detail="Unauthorized")
+        
+        # Additional check: verify user still exists and is active/approved
+        user = db.query(AdminUser).filter(AdminUser.email == username).first()
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+        
+        if not user.is_approved:
+            raise HTTPException(status_code=403, detail="Account no longer approved")
+        
+        if not user.is_active:
+            raise HTTPException(status_code=403, detail="Account has been deactivated")
+        
         return username
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
