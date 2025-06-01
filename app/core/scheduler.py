@@ -49,5 +49,7 @@ def process_queue():
         os.remove(os.path.join(CAPTURED_DIR, to_delete))
 
 def start_scheduler():
-    scheduler.add_job(process_queue, "interval", minutes=1)
+    settings = load_settings()
+    interval_minutes = settings.get("post_interval_minutes", 3)
+    scheduler.add_job(process_queue, "interval", minutes=interval_minutes)
     scheduler.start()
