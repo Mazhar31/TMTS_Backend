@@ -1,0 +1,12 @@
+{
+  "business_name": "testing",
+  "business_address": "testing address",
+  "hashtags": "testing hashtag",
+  "caption_templates": ["testing caption"],
+  "max_photos": 50,
+  "post_interval_minutes": 1,
+  "page_title": "TMTSelfie Booth",
+  "logo_filename": "",
+  "background_filename": "",
+  "caption_index": 6
+}

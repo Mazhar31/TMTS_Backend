@@ -3,5 +3,6 @@
   "app_secret": "",
   "user_token": "",
   "page_id": "",
-  "page_token": ""
+  "page_token": "",
+  "token_expiry": 0
 }
